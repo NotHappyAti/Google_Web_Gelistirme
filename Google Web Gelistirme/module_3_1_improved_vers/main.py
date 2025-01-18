@@ -1,26 +1,42 @@
-from pydantic import BaseModel
-from fastapi import FastAPI, Body, HTTPException, Path, Query
-from starlette import status 
-from typing import Optional
-from datetime import datetime
+from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException, Path, Query
+from starlette import status
+from typing import Optional, List
 
 app = FastAPI()
 
-#external data source type json improved vers.
-class course(BaseModel):
+class Course(BaseModel):
     id: int
     instructor: str
     title: str
-    category: str
-    publish_date: str
+    rating: int
+    publish_year: int
 
-courses_db =[
-    course(id=1, instructor="John Doe", title="Python Programming", category="Programming",rating=4, publish_date="2021-01-01"),
-    course(id=2, instructor="Jane Doe", title="Java Programming", category="Programming",rating=3, publish_date="2021-01-02"),
-    course(id=3, instructor="Jim Doe", title="Data Science", category="Data Science",rating=5, publish_date="2021-01-03"),
-    course(id=4, instructor="John Doe", title="Machine Learning", category="Data Science",rating=4, publish_date="2021-01-04"),
-    course(id=5, instructor="Jack Doe", title="Web Development", category="Web Development",rating=3, publish_date="2021-01-05"),
-    course(id=6, instructor="Jenny Doe", title="Android Development", category="Mobile Development",rating=5, publish_date="2021-01-06")
+class courseRequest(BaseModel):
+    id: Optional[int] = None
+    instructor: str = Field(min_length=3, max_length=50)
+    title: str = Field(min_length=3, max_length=50)
+    rating: int = Field(gte=0, lte=5)
+    publish_year: int = Field(gte=2000, lte=2100)
+
+    model_config = {
+        "json_schema_extra": {
+            'example': {
+                "instructor": "Example Instructor",
+                "title": "Example Title",
+                "rating": 4,
+                "publish_year": 2022
+            }
+        }
+    }
+
+courses_db = [
+    Course(id=1, instructor="John Doe", title="Python Programming", rating=4, publish_year=2023),
+    Course(id=2, instructor="Jane Doe", title="Java Programming", rating=3, publish_year=2021),
+    Course(id=3, instructor="Jim Doe", title="Data Science", rating=5, publish_year=2024),
+    Course(id=4, instructor="John Doe", title="Machine Learning", rating=4, publish_year=2020),
+    Course(id=5, instructor="Jack Doe", title="Web Development", rating=3, publish_year=2021),
+    Course(id=6, instructor="Jenny Doe", title="Android Development", rating=5, publish_year=2021),
 ]
 
 # root path
@@ -44,3 +60,12 @@ async def get_course_by_rating(rating: int = Query(gt=0, lt=6)):
         return selected_course
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Course not found.')
+
+@app.put("/courses/create_course", status_code=status.HTTP_201_CREATED)
+async def create_course(course: courseRequest):
+    course = find_id(course).model_dump()
+    courses_db.append(course)
+    
+def find_id(course):
+    course.id = 1 if len(courses_db) == 0 else courses_db[-1].id + 1
+    return course
