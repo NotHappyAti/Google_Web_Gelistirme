@@ -10,6 +10,7 @@ class User(Base):
     name = Column(String)
     last_name = Column(String)
     hashed_password = Column(String)
+    phone_number = Column(String)
 
 class ToDo(Base):
     __tablename__ = 'todos'
@@ -20,4 +21,3 @@ class ToDo(Base):
     priority = Column(Integer)
     is_completed = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey('users.id'))
-    
